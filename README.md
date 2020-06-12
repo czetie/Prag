@@ -20,7 +20,7 @@ All of these languages left me wanting in one way or another. For example,
 
 - Others allow errors to occur at runtime that should have been caught at compile time, such as a method turning out to be virtual when it finally comes time to dispatch it. (The worst thing about that kind of problem is that it can lurk undetected in some obscure corner of the code, just waiting for some previously unseen case to trigger it.)
 
-- Some place far too much mental burden on the programmer, e.g. to follow the chain of inheritance, to figure out what is going on in the code.
+- Some place far too much mental burden on the programmer, e.g. to follow the chain of inheritance, to figure out what is going on in the code, figure out overrides and defaults, and so on.
 
 - Polymorphism and generics seem especially fraught with over-elaborate syntax, complex rules of interpretation, and the possibility of error. 
 
