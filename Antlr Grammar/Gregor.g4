@@ -36,26 +36,60 @@ grammar Gregor;
  * it that way.
  */
 
+file            : 
+                ( define_stmt       // A statement can be a 'define'...
+                | implement_stmt    // ...an 'implement'...
+                | declare_stmt      // ...or a 'declare'
+                )+                  // One or more. Empty file not valid    
+                ;                   // TODO will eventually need some kind of import / include statement
 
+define_stmt     : 'define'          // All the kinds of things we can define
+                (
+                    ( interface_defn    
+                    | func_defn
+                    | enum_defn
+                    )    
+                ) ';'               // terminated with a semicolon
+                ;
+
+// An enum is just name followed by a comma-separated list of ids enclosed in []
+enum_defn       : ID '[' ID (, ID)* ']'; // must be non-empty list
+
+// A func is a bit more complicated
+// An ID followed by a param list in () followed by a return type
+// A return type is an ID or a signature. At compile time we need to validate that
+// an ID refers to a declared or builtin type
+func_defn       : ID '(' param_list? ')' TYPE;
+param_list      : param (',' param);
+param           : ID TYPE;                  // a parameter is a name / type pair
+
+// interface definition is an ID followed by a members list in {}
+// interface must be non-empty
+interface_defn  : ID '{' member_list '}';
+member_list:    : member (, member)*;
+member          : func_defn             // methods look just like function definition
+                | var_defn;             // TODO what does a variable declaration look like?
+
+//variable declarations and definitions are not really distinguished
 
 
 
 /*
- * This is the lexer for the language Gregor, an "interface-oriented language" in the
- * C tradition. The lexer borrows heavily from GoLang as a starting point for many
- * common elements, as well as borrowing from C, Rust, Python, and anybody else
- * that I thought had a good idea about syntax
+ * This is the lexer for the language Gregor. The lexer borrows heavily from GoLang as 
+ * a starting point for many common language lexical elements, as well as borrowing from 
+ * C, Rust, Python, and anybody else that I thought had a good idea about syntax
  */
 
 
 
 // Keywords
 
-ENUM                   : 'enum';
+//ENUM                   : 'enum';  // Not sure this is needed either
 BREAK                  : 'break';
 DEFAULT                : 'default';
-FUNC                   : 'func';
-INTERFACE              : 'interface';
+//FUNC                   : 'func';  // probably don't need this 
+//INTERFACE              : 'interface';
+DEFINE                 : 'define'
 IMPLEMENT              : 'implement';
 DECLARE                : 'declare';
 SELECT                 : 'select';
@@ -79,13 +113,14 @@ FOR                    : 'for';
 IMPORT                 : 'import';
 RETURN                 : 'return';
 VAR                    : 'var';
+TYPE                    : ID;   // a type looks just like an ID, but we need to know in the parser when we get one
 
 //some literals
 TRUE_LIT               : 'true';
 FALSE_LIT              : 'false';
 NIL_LIT                : 'nil';
 
-IDENTIFIER             : ASCII_LETTER (ASCII_LETTER | [0-9])*; //TODO not sure I will end up using this anywhere?
+ID                       : ASCII_LETTER (ASCII_LETTER | [0-9])*; //TODO not sure I will end up using this anywhere?
 //DEFINE_ID              : UC_LETTER (ASCII_LETTER | [0-9])*; // for interfaces and classes/implementations
 //DECLARE_ID             : LC_LETTER (ASCII_LETTER | [0-9])*; // for instances
 
