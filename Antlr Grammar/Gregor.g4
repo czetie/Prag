@@ -53,26 +53,49 @@ define_stmt     : 'define'          // All the kinds of things we can define
                 ;
 
 // An enum is just name followed by a comma-separated list of ids enclosed in []
-enum_defn       : ID '[' ID (, ID)* ']'; // must be non-empty list
+enum_defn       : ID '[' ID (',' ID)* ']'; // must be non-empty list
 
 // A func is a bit more complicated
 // An ID followed by a param list in () followed by a return type
 // A return type is an ID or a signature. At compile time we need to validate that
 // an ID refers to a declared or builtin type
-func_defn       : ID '(' param_list? ')' TYPE;
-param_list      : param (',' param);
-param           : ID TYPE;                  // a parameter is a name / type pair
+func_defn       : ID '(' param_list? ')' typespec;
+param_list      : param (',' param);            // comma separated list of parameters
+param           : ID typespec;                  // a parameter is a name / type pair
 
 // interface definition is an ID followed by a members list in {}
+// members are comma separated just like other lists in Gregor
 // interface must be non-empty
 interface_defn  : ID '{' member_list '}';
-member_list:    : member (, member)*;
+member_list     : member (',' member)*;
 member          : func_defn             // methods look just like function definition
                 | var_defn;             // TODO what does a variable declaration look like?
 
-//variable declarations and definitions are not really distinguished
+// variable declarations and definitions are not really distinguished
+// Type names and descriptors can be
+// 1. A built-in type
+// 2. A user-named type, i.e. an interface or implementation name, a function type, an enum...
+// 3. a collection of any other type
+// Because of user-named types, the hard work has to be done in the
+// compiler code not the grammar. We have to look for the defined type
+// and determine if it is OK in context
 
+var_defn        : ID typespec;
 
+typespec        : TYPE collectionspec?; //TYPE names look just like IDs
+
+collectionspec  : '[' index ']';        
+
+index           : array_index           // any finite ordered set type
+                | list_index            // any non-finite ordered set type
+                | map_index             // any type
+                ;
+
+array_index     : INT_LIT               // simple zero-based array like C and other languages
+                | 'bool'                // An array indexed by true and false. Why not?
+                | ID                    // Name of an enum type, compiler must check
+                | slice_index           // An integer slice 
+                ;
 
 /*
  * This is the lexer for the language Gregor. The lexer borrows heavily from GoLang as 
@@ -84,12 +107,12 @@ member          : func_defn             // methods look just like function defin
 
 // Keywords
 
-//ENUM                   : 'enum';  // Not sure this is needed either
+// ENUM                   : 'enum';  // Not sure this is needed either
 BREAK                  : 'break';
 DEFAULT                : 'default';
 //FUNC                   : 'func';  // probably don't need this 
 //INTERFACE              : 'interface';
-DEFINE                 : 'define'
+DEFINE                 : 'define';
 IMPLEMENT              : 'implement';
 DECLARE                : 'declare';
 SELECT                 : 'select';
@@ -107,7 +130,6 @@ CONST                  : 'const';
 //FALLTHROUGH            : 'fallthrough';
 IF                     : 'if';
 RANGE                  : 'range';
-TYPE                   : 'type';
 CONTINUE               : 'continue';
 FOR                    : 'for';
 IMPORT                 : 'import';
@@ -185,10 +207,12 @@ MULT                   : '*';
 
 // Number literals
 
-DECIMAL_LIT            : [1-9] [0-9]*; //TODO disallow leading zero to avoid confusion with Oct or Hex?
-OCTAL_LIT              : '0o' OCTAL_DIGIT+; //slightly different from Go, more explicit
-HEX_LIT                : '0x' HEX_DIGIT+;
-BIN_LIT                : '0b' BIN_DIGIT+; //TODO allow underscore for readability?
+DECIMAL_LIT             : [1-9] [0-9]*; //TODO disallow leading zero to avoid confusion with Oct or Hex?
+OCTAL_LIT               : '0o' OCTAL_DIGIT+; //slightly different from Go, more explicit
+HEX_LIT                 : '0x' HEX_DIGIT+;
+BIN_LIT                 : '0b' BIN_DIGIT+; //TODO allow underscore for readability?
+
+INT_LIT                 : DECIMAL_LIT | OCTAL_LIT | HEX_LIT | BIN_LIT;
 
 FLOAT_LIT              : DECIMALS ('.' DECIMALS? EXPONENT? | EXPONENT)
                        | '.' DECIMALS EXPONENT?
